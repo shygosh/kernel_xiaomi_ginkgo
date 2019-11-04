@@ -56,3 +56,9 @@
 &pm8008_9 {
 	status = "disabled";
 };
+
+&soc {
+    restart@440b000 {
+        qcom,force-warm-reboot;
+    };
+};
