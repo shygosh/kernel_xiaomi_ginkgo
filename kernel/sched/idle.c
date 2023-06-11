@@ -246,7 +246,7 @@ static void do_idle(void)
 		check_pgt_cache();
 		rmb();
 
-		if (cpu_is_offline(smp_processor_id())) {
+		if (IS_ENABLED(CONFIG_HOTPLUG_CPU) && cpu_is_offline(smp_processor_id())) {
 			tick_nohz_idle_stop_tick_protected();
 			cpuhp_report_idle_dead();
 			arch_cpu_idle_dead();
