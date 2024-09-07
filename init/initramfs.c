@@ -623,7 +623,7 @@ static int __init populate_rootfs(void)
 {
 	char *err;
 
-	if (do_skip_initramfs) {
+	if (!super_partition) {
 		if (initrd_start)
 			free_initrd();
 		return default_rootfs();

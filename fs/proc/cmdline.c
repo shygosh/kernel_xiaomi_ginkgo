@@ -3,10 +3,13 @@
 #include <linux/init.h>
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h>
+#include <asm/setup.h>
+
+static char new_command_line[COMMAND_LINE_SIZE];
 
 static int cmdline_proc_show(struct seq_file *m, void *v)
 {
-	seq_printf(m, "%s\n", saved_command_line);
+	seq_printf(m, "%s\n", new_command_line);
 	return 0;
 }
 
@@ -22,8 +25,44 @@ static const struct file_operations cmdline_proc_fops = {
 	.release	= single_release,
 };
 
+static void patch_flag_remove_flag(char *cmd, const char *flag)
+{
+	char *offset_addr = cmd;
+	offset_addr = strstr(cmd, flag);
+	if (offset_addr) {
+		size_t i, len, offset;
+
+		len = strlen(cmd);
+		offset = offset_addr - cmd;
+
+		for (i = 1; i < (len - offset); i++) {
+			if (cmd[offset + i] == ' ')
+				break;
+		}
+
+		memmove(offset_addr, &cmd[offset + i + 1], len - i - offset);
+	} else {
+		printk("%s: Unable to find flag \"%s\"\n", __func__, flag);
+	}
+}
+
+static void patch_flag_add_flag(char *cmd, const char *flag)
+{
+	const char *wspace = " ";
+	strcat(cmd, wspace);
+	strcat(cmd, flag);
+}
+
 static int __init proc_cmdline_init(void)
 {
+	strcpy(new_command_line, saved_command_line);
+
+	if (super_partition) {
+		// Omit the last character to prevent Magisk from removing 'this' string
+		patch_flag_remove_flag(new_command_line, "skip_initramf");
+		patch_flag_add_flag(new_command_line, "want_initramfs");
+	}
+
 	proc_create("cmdline", 0, NULL, &cmdline_proc_fops);
 	return 0;
 }
